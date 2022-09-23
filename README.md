@@ -1,1 +1,1 @@
-# Bio_inf_course
+# This is repo with files to read genome
