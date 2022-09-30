@@ -1,6 +1,5 @@
 from operator import index
 
-
 stop_pos = 0
 start_pos = 0
 codon_list = []
