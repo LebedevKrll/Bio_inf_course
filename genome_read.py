@@ -1,46 +1,49 @@
+
 from copy import deepcopy as dc
 
-codon_dictionary = { 
- "A": ["GCA","GCC","GCG","GCT"], 
- "C": ["TGC","TGT"], 
- "D": ["GAC", "GAT"],
- "E": ["GAA","GAG"],
- "F": ["TTC","TTT"],
- "G": ["GGA","GGC","GGG","GGT"],
- "H": ["CAC","CAT"],
- "I": ["ATA","ATC","ATT"],
- "K": ["AAA","AAG"],
- "L": ["CTA","CTC","CTG","CTT","TTA","TTG"],
- "M": ["ATG"],
- "N": ["AAC","AAT"],
- "P": ["CCA","CCC","CCG","CCT"],
- "Q": ["CAA","CAG"],
- "R": ["AGA","AGG","CGA","CGC","CGG","CGT"],
- "S": ["AGC","AGT","TCA","TCC","TCG","TCT"],
- "T": ["ACA","ACC","ACG","ACT"],
- "V": ["GTA","GTC","GTG","GTT"],
- "W": ["TGG"],
- "Y": ["TAC","TAT"],
- "stop": ["TAG", "TAA", "TGA"]
-}
-codon_list = []
-AA = ''
-nts_in_AA = 0
-orf_poss = []
-orf_pos = ''
-aa_list = []
-
 def codons_into_aas(codon_list: list) -> str:
-    aa_list = []
+    codon_dictionary = { 
+    "A": ["GCA","GCC","GCG","GCT"], 
+    "C": ["TGC","TGT"], 
+    "D": ["GAC", "GAT"],
+    "E": ["GAA","GAG"],
+    "F": ["TTC","TTT"],
+    "G": ["GGA","GGC","GGG","GGT"],
+    "H": ["CAC","CAT"],
+    "I": ["ATA","ATC","ATT"],
+    "K": ["AAA","AAG"],
+    "L": ["CTA","CTC","CTG","CTT","TTA","TTG"],
+    "M": ["ATG"],
+    "N": ["AAC","AAT"],
+    "P": ["CCA","CCC","CCG","CCT"],
+    "Q": ["CAA","CAG"],
+    "R": ["AGA","AGG","CGA","CGC","CGG","CGT"],
+    "S": ["AGC","AGT","TCA","TCC","TCG","TCT"],
+    "T": ["ACA","ACC","ACG","ACT"],
+    "V": ["GTA","GTC","GTG","GTT"],
+    "W": ["TGG"],
+    "Y": ["TAC","TAT"],
+    "stop": ["TAG", "TAA", "TGA"]
+    }
+    aa_list_func = []
     for codon in codon_list:
         aa = [k for k, v in codon_dictionary.items() if codon in v]
-        aa_list += aa[0]
-    return aa_list
+        aa_list_func += aa[0]
+    return aa_list_func
 
-def form_codon_list(cut= -10, file: str) -> list:
-    if cut >= 0:
-        file = dc(file[0 : cut : ]) + dc(file[cut + 1 : :])
-    for line in file:
+def form_codon_list(file_func: str, side: str,  cut: int) -> list:
+
+    nts_in_AA = 0
+    AA = ''
+    codon_list = []
+
+    if side == '-':
+        file_func = file_func[::-1]
+
+    if int(cut) - 1 >= 0:
+        file_func = dc(file_func[0 : cut : ]) + dc(file_func[cut + 1 : :])
+
+    for line in file_func:
         for nt in line:
             AA += nt
             nts_in_AA += 1
@@ -48,44 +51,47 @@ def form_codon_list(cut= -10, file: str) -> list:
                 codon_list.append(AA)
                 AA = ''
                 nts_in_AA = 0
+
     return codon_list
 
 def extend_orf_poss(codon_list: list, side: str, cut: int):    #side can be - or + and shows which way are we reading 53 or 35
+    
+    orf_pos = []
+
     for codon in range(len(codon_list)):
         if codon_list[codon] == 'ATG':
-            if len(orf_pos) < 2:
-                orf_pos += str(codon) + ' '
+            if len(orf_pos) < 1:
+                orf_pos.append(codon)
         elif codon_list[codon] == 'TAA' or codon_list[codon] == 'TAG' or codon_list[codon] == 'TGA':
             if len(orf_pos) > 0:
-                orf_pos += str(codon) + f' {side}'
+                orf_pos.append(codon)
+                orf_pos.append(side)
+                orf_pos.append(cut)
                 orf_poss.append(orf_pos)
-                orf_pos = ''
+                orf_pos = []
 
 with open('GCF_000005845.2_ASM584v2_genomic.fna', 'r') as file_cursor:
     file = file_cursor.read()
 
 file = file.replace('\n', '')
 
-codon_list = form_codon_list(file)
+orf_poss = []
 
-extend_orf_poss(codon_list, '+', 0)
+extend_orf_poss(form_codon_list(file, '+', 0), '+', 0)
 
-codon_list = form_codon_list(0, file)
+extend_orf_poss(form_codon_list(file, '+', 1), '+', 1)
 
-extend_orf_poss(codon_list, '+', 1)
+extend_orf_poss(form_codon_list(file, '+', 2), '+', 2)
 
-codon_list = form_codon_list(1, file)
+extend_orf_poss(form_codon_list(file, '-', 0), '-', 0)
 
-extend_orf_poss(codon_list, '+', 2)
+extend_orf_poss(form_codon_list(file, '-', 1), '-', 1)
 
-codon_list = form_codon_list(file)[::-1]
+extend_orf_poss(form_codon_list(file, '-', 2), '-', 2)
 
-extend_orf_poss(codon_list, '-', 0)
+aa_list = []
 
-codon_list = form_codon_list(0, file)[::-1]
+for i in range(len(orf_poss)):
+    aa_list.append(codons_into_aas(form_codon_list(file[orf_poss[i][0]: orf_poss[i][1] + 1], orf_poss[i][2], orf_poss[i][3])))
 
-extend_orf_poss(codon_list, '-', 1)
-
-codon_list = form_codon_list(1, file)[::-1]
-
-extend_orf_poss(codon_list, '-', 2)
+print(aa_list)

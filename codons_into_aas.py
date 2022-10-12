@@ -27,6 +27,7 @@ def codons_into_aas(codon_list: list) -> str:
     for codon in codon_list:
         aa = [k for k, v in codon_dictionary.items() if codon in v]
         if aa[0] == 'stop':
+            
             break
         aa_list += aa[0]
     return aa_list
