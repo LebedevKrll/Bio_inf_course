@@ -92,6 +92,24 @@ extend_orf_poss(form_codon_list(file, '-', 2), '-', 2)
 aa_list = []
 
 for i in range(len(orf_poss)):
-    aa_list.append(codons_into_aas(form_codon_list(file[orf_poss[i][0]: orf_poss[i][1] + 1], orf_poss[i][2], orf_poss[i][3])))
+    if orf_poss[i][2] == '+':
+        coord_opening = 3 * orf_poss[i][0]
+        coord_closing = 3 * orf_poss[i][1] + 1
+        if orf_poss[i][3] == 1:
+            coord_opening += 1
+            coord_closing += 1
+        elif orf_poss[i][3] == 2:
+            coord_opening += 2
+            coord_closing += 2
+        aa_list.append(codons_into_aas(form_codon_list(file[coord_opening : coord_closing], '+', 0)))
+    else:
+        coord_opening = len(file) - 3 * orf_poss[i][0] - 1
+        coord_closing = len(file) - 3 * orf_poss[i][1] - 1
+        if orf_poss[i][3] == 1:
+            coord_opening -= 1
+            coord_closing -= 1
+        elif orf_poss[i][3] == 2:
+            coord_opening -= 2
+            coord_closing -= 2
+        aa_list.append(codons_into_aas(form_codon_list(file[coord_opening : coord_closing : -1], '+', 0)))
 
-print(aa_list)
